@@ -1,6 +1,9 @@
 package com.airbnb.epoxy;
 
 import android.support.annotation.LayoutRes;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 import java.util.List;
 
@@ -40,6 +43,14 @@ public abstract class EpoxyModel<T> {
 
   boolean hasDefaultId() {
     return hasDefaultId;
+  }
+
+  int getViewType() {
+    return getLayout();
+  }
+
+  View buildView(ViewGroup parent) {
+    return LayoutInflater.from(parent.getContext()).inflate(getLayout(), parent, false);
   }
 
   /**

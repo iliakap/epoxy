@@ -50,6 +50,9 @@ public abstract class EpoxyController {
   // Note that it doesn't work to attach the adapter to multiple recyclerviews because of saved
   // state. Multiple recyclerviews could be supported if needed.
 
+  // TODO: (eli_hart 3/7/17) Guide for updating to 2.0
+  // Setting a null click listener is broken. Now needs to be cast.
+
   /**
    * Call this to schedule a model update. The adapter will schedule a call to {@link
    * #buildModels()} so that models can be rebuilt for the current data.

@@ -3,8 +3,10 @@ package com.airbnb.epoxy;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
+import android.support.v4.util.SparseArrayCompat;
 import android.support.v7.widget.GridLayoutManager.SpanSizeLookup;
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.Collections;
@@ -21,6 +23,8 @@ abstract class BaseEpoxyAdapter extends RecyclerView.Adapter<EpoxyViewHolder> {
    */
   private final BoundViewHolders boundViewHolders = new BoundViewHolders();
   private ViewHolderState viewHolderState = new ViewHolderState();
+  private SparseArrayCompat<EpoxyModel<?>> layoutToModelMap;
+  private EpoxyModel<?> lastModel;
 
   private final SpanSizeLookup spanSizeLookup = new SpanSizeLookup() {
 
@@ -61,8 +65,34 @@ abstract class BaseEpoxyAdapter extends RecyclerView.Adapter<EpoxyViewHolder> {
   }
 
   @Override
-  public EpoxyViewHolder onCreateViewHolder(ViewGroup parent, int layoutRes) {
-    return new EpoxyViewHolder(parent, layoutRes);
+  public EpoxyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    EpoxyModel<?> model = getModelForLayout(viewType);
+    View view = model.buildView(parent);
+    return new EpoxyViewHolder(view);
+  }
+
+  private EpoxyModel<?> getModelForLayout(int viewType) {
+    if (lastModel != null && lastModel.getViewType() == viewType) {
+      return lastModel;
+    }
+
+    if (layoutToModelMap == null) {
+      layoutToModelMap = new SparseArrayCompat<>();
+    }
+
+    EpoxyModel<?> epoxyModel = layoutToModelMap.get(viewType);
+    if (epoxyModel != null) {
+      return epoxyModel;
+    }
+
+    for (EpoxyModel<?> model : getCurrentModels()) {
+      if (model.getViewType() == viewType) {
+        layoutToModelMap.put(viewType, model);
+        return model;
+      }
+    }
+
+    throw new IllegalStateException("Could not find model for view type: " + viewType);
   }
 
   @Override
@@ -114,7 +144,8 @@ abstract class BaseEpoxyAdapter extends RecyclerView.Adapter<EpoxyViewHolder> {
 
   @Override
   public int getItemViewType(int position) {
-    return getModelForPosition(position).getLayout();
+    lastModel = getModelForPosition(position);
+    return lastModel.getViewType();
   }
 
   @Override
