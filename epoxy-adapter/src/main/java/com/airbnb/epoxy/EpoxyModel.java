@@ -1,6 +1,11 @@
 package com.airbnb.epoxy;
 
 import android.support.annotation.LayoutRes;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.airbnb.epoxy.EpoxyController.ModelInterceptorCallback;
 
 import java.util.List;
 
@@ -25,8 +30,26 @@ public abstract class EpoxyModel<T> {
   private long id;
   @LayoutRes private int layout;
   private boolean shown = true;
-  /** Set to true once this model is added to an adapter. */
+  /**
+   * Set to true once this model is diffed in an adapter. Used to ensure that this model's id
+   * doesn't change after being diffed.
+   */
   boolean addedToAdapter;
+  /**
+   * The first controller this model was added to. A reference is kept in debug mode in order to run
+   * validations. The model is allowed to be added to other controllers, but we only keep a
+   * reference to the first.
+   */
+  private EpoxyController firstControllerAddedTo;
+  /**
+   * Models are staged when they are changed. This allows them to be automatically added when they
+   * are done being changed (eg the next model is changed/added or buildModels finishes). It is only
+   * allowed for AutoModels, and only if implicity adding is enabled.
+   */
+  EpoxyController controllerToStageTo;
+  private boolean currentlyInInterceptors;
+  private int hashCodeWhenAdded;
+  private boolean hasDefaultId;
 
   protected EpoxyModel(long id) {
     id(id);
@@ -34,6 +57,25 @@ public abstract class EpoxyModel<T> {
 
   public EpoxyModel() {
     this(idCounter--);
+    hasDefaultId = true;
+  }
+
+  boolean hasDefaultId() {
+    return hasDefaultId;
+  }
+
+  /**
+   * Get the view type to associate with this model in the recyclerview. For models that use a
+   * layout resource, the view type is simply the layout resource value.
+   *
+   * @see android.support.v7.widget.RecyclerView.Adapter#getItemViewType(int)
+   */
+  int getViewType() {
+    return getLayout();
+  }
+
+  View buildView(ViewGroup parent) {
+    return LayoutInflater.from(parent.getContext()).inflate(getLayout(), parent, false);
   }
 
   /**
@@ -49,9 +91,45 @@ public abstract class EpoxyModel<T> {
    * describing what changed. This is the payloads list specified in the adapter's notifyItemChanged
    * method. This is a useful optimization to allow you to only change part of a view instead of
    * updating the whole thing, which may prevent unnecessary layout calls. If there are no payloads
-   * then {@link #bind(Object)} is called instead.
+   * then {@link #bind(Object)} is called instead. This will only be used if the model is used with
+   * an {@link EpoxyAdapter}
    */
   public void bind(T view, List<Object> payloads) {
+    bind(view);
+  }
+
+  /**
+   * Similar to {@link #bind(Object)}, but provides a non null model which was previously bound to
+   * this view. This will only be called if the model is used with an {@link EpoxyController}.
+   *
+   * @param previouslyBoundModel This is a model with the same id that was previously bound. You can
+   *                             compare this previous model with the current one to see exactly
+   *                             what changed.
+   *                             <p>
+   *                             This model and the previously bound model are guaranteed to have
+   *                             the same id, but will not necessarily be of the same type depending
+   *                             on your implementation of {@link EpoxyController#buildModels()}.
+   *                             With common usage patterns of Epoxy they should be the same type,
+   *                             and will only differ if you are using different model classes with
+   *                             the same id.
+   *                             <p>
+   *                             Comparing the newly bound model with the previous model allows you
+   *                             to be more intelligent when binding your view. This may help you
+   *                             optimize view binding, or make it easier to work with animations.
+   *                             <p>
+   *                             If the new model and the previous model have the same view type
+   *                             (given by {@link EpoxyModel#getViewType()}), and if you are using
+   *                             the default ReyclerView item animator, the same view will be
+   *                             reused. This means that you only need to update the view to reflect
+   *                             the data that changed. If you are using a custom item animator then
+   *                             the view will be the same if the animator returns true in
+   *                             canReuseUpdatedViewHolder.
+   *                             <p>
+   *                             This previously bound model is taken as a payload from the diffing
+   *                             process, and follows the same general conditions for all
+   *                             recyclerview change payloads.
+   */
+  public void bind(T view, EpoxyModel<?> previouslyBoundModel) {
     bind(view);
   }
 
@@ -63,7 +141,7 @@ public abstract class EpoxyModel<T> {
    * if the view has remained on screen to be reused across item changes. This means that you should
    * not rely on unbind to clear a view or model's state before bind is called again.
    *
-   * @see {@link EpoxyAdapter#onViewRecycled(EpoxyViewHolder)}
+   * @see EpoxyAdapter#onViewRecycled(EpoxyViewHolder)
    */
   public void unbind(T view) {
   }
@@ -78,13 +156,40 @@ public abstract class EpoxyModel<T> {
    * error to change the id after that.
    */
   public EpoxyModel<T> id(long id) {
-    if (addedToAdapter && id != this.id) {
-      throw new IllegalStateException(
+    if ((addedToAdapter || firstControllerAddedTo != null) && id != this.id) {
+      throw new IllegalEpoxyUsage(
           "Cannot change a model's id after it has been added to the adapter.");
     }
 
+    hasDefaultId = false;
     this.id = id;
     return this;
+  }
+
+  /**
+   * Use multiple numbers as the id for this model. Useful when you don't have a single long that
+   * represents a unique id.
+   * <p>
+   * This hashes the numbers, so there is a tiny risk of collision with other ids.
+   */
+  public EpoxyModel<T> id(Number... ids) {
+    long result = 0;
+    for (Number id : ids) {
+      result = 31 * result + hashLong64Bit(id.hashCode());
+    }
+    return id(result);
+  }
+
+  /**
+   * Use two numbers as the id for this model. Useful when you don't have a single long that
+   * represents a unique id.
+   * <p>
+   * This hashes the two numbers, so there is a tiny risk of collision with other ids.
+   */
+  public EpoxyModel<T> id(long id1, long id2) {
+    long result = hashLong64Bit(id1);
+    result = 31 * result + hashLong64Bit(id2);
+    return id(result);
   }
 
   /**
@@ -161,6 +266,7 @@ public abstract class EpoxyModel<T> {
   protected abstract int getDefaultLayout();
 
   public EpoxyModel<T> layout(@LayoutRes int layoutRes) {
+    onMutation();
     layout = layoutRes;
     return this;
   }
@@ -178,10 +284,149 @@ public abstract class EpoxyModel<T> {
    * Sets fields of the model to default ones.
    */
   public EpoxyModel<T> reset() {
+    onMutation();
+
     layout = 0;
     shown = true;
 
     return this;
+  }
+
+  /**
+   * Add this model to the given controller. Can only be called from inside {@link
+   * EpoxyController#buildModels()}.
+   */
+  public void addTo(EpoxyController controller) {
+    controller.addInternal(this);
+  }
+
+  /**
+   * Add this model to the given controller if the condition is true. Can only be called from inside
+   * {@link EpoxyController#buildModels()}.
+   */
+  public void addIf(boolean condition, EpoxyController controller) {
+    if (condition) {
+      addTo(controller);
+    } else if (controllerToStageTo != null) {
+      // Clear this model from staging since it failed the add condition. If this model wasn't
+      // staged (eg not changed before addIf was called, then we need to make sure to add the
+      // previously staged model.
+      controllerToStageTo.clearModelFromStaging(this);
+      controllerToStageTo = null;
+    }
+  }
+
+  /**
+   * Add this model to the given controller if the {@link AddPredicate} return true. Can only be
+   * called from inside {@link EpoxyController#buildModels()}.
+   */
+  public void addIf(AddPredicate predicate, EpoxyController controller) {
+    addIf(predicate.addIf(), controller);
+  }
+
+  /**
+   * @see #addIf(AddPredicate, EpoxyController)
+   */
+  public interface AddPredicate {
+    boolean addIf();
+  }
+
+  /**
+   * This is used internally by generated models to turn on validation checking when
+   * "validateEpoxyModelUsage" is enabled and the model is used with an {@link EpoxyController}.
+   */
+  protected final void addWithDebugValidation(EpoxyController controller) {
+    if (controller == null) {
+      throw new IllegalArgumentException("Controller cannot be null");
+    }
+
+    if (controller.isModelAddedMultipleTimes(this)) {
+      throw new IllegalEpoxyUsage(
+          "This model was already added to the controller at position "
+              + controller.getFirstIndexOfModelInBuildingList(this));
+    }
+
+    if (firstControllerAddedTo == null) {
+      firstControllerAddedTo = controller;
+
+      // We save the current hashCode so we can compare it to the hashCode at later points in time
+      // in order to validate that it doesn't change and enforce mutability.
+      hashCodeWhenAdded = hashCode();
+
+      // The one time it is valid to change the model is during an interceptor callback. To support
+      // that we need to update the hashCode after interceptors have been run.
+      // The model can be added to multiple controllers, but we only allow an interceptor change
+      // the first time, since after that it will have been added to an adapter.
+      controller.addAfterInterceptorCallback(new ModelInterceptorCallback() {
+        @Override
+        public void onInterceptorsStarted(EpoxyController controller) {
+          currentlyInInterceptors = true;
+        }
+
+        @Override
+        public void onInterceptorsFinished(EpoxyController controller) {
+          hashCodeWhenAdded = EpoxyModel.this.hashCode();
+          currentlyInInterceptors = false;
+        }
+      });
+    }
+  }
+
+  boolean isDebugValidationEnabled() {
+    return firstControllerAddedTo != null;
+  }
+
+  /**
+   * This is used internally by generated models to do validation checking when
+   * "validateEpoxyModelUsage" is enabled and the model is used with an {@link EpoxyController}.
+   * This method validates that it is ok to change this model. It is only valid if the model hasn't
+   * yet been added, or the change is being done from an {@link EpoxyController.Interceptor}
+   * callback.
+   * <p>
+   * This is also used to stage the model for implicitly adding it, if it is an AutoModel and
+   * implicit adding is enabled.
+   */
+  protected final void onMutation() {
+    // The model may be added to multiple controllers, in which case if it was already diffed
+    // and added to an adapter in one controller we don't want to even allow interceptors
+    // from changing the model in a different controller
+    if (isDebugValidationEnabled() && !currentlyInInterceptors) {
+      throw new ImmutableModelException(this,
+          getPosition(firstControllerAddedTo, this));
+    }
+
+    if (controllerToStageTo != null) {
+      controllerToStageTo.setStagedModel(this);
+    }
+  }
+
+  private static int getPosition(EpoxyController controller, EpoxyModel<?> model) {
+    // If the model was added to multiple controllers, or was removed from the controller and then
+    // modified, this won't be correct. But those should be very rare cases that we don't need to
+    // worry about
+    if (controller.isBuildingModels()) {
+      return controller.getFirstIndexOfModelInBuildingList(model);
+    }
+
+    return controller.getAdapter().getModelPosition(model);
+  }
+
+  /**
+   * This is used internally by generated models to do validation checking when
+   * "validateEpoxyModelUsage" is enabled and the model is used with a {@link EpoxyController}. This
+   * method validates that the model's hashCode hasn't been changed since it was added to the
+   * controller. This is similar to {@link #onMutation()}, but that method is only used for
+   * specific model changes such as calling a setter. By checking the hashCode, this method allows
+   * us to catch more subtle changes, such as through setting a field directly or through changing
+   * an object that is set on the model.
+   */
+  protected final void validateStateHasNotChangedSinceAdded(String descriptionOfChange,
+      int modelPosition) {
+    if (isDebugValidationEnabled()
+        && !currentlyInInterceptors
+        && hashCodeWhenAdded != hashCode()) {
+      throw new ImmutableModelException(this, descriptionOfChange, modelPosition);
+    }
   }
 
   @Override
@@ -198,7 +443,7 @@ public abstract class EpoxyModel<T> {
     if (id != that.id) {
       return false;
     }
-    if (getLayout() != that.getLayout()) {
+    if (getViewType() != that.getViewType()) {
       return false;
     }
     return shown == that.shown;
@@ -207,7 +452,7 @@ public abstract class EpoxyModel<T> {
   @Override
   public int hashCode() {
     int result = (int) (id ^ (id >>> 32));
-    result = 31 * result + getLayout();
+    result = 31 * result + getViewType();
     result = 31 * result + (shown ? 1 : 0);
     return result;
   }
@@ -224,19 +469,33 @@ public abstract class EpoxyModel<T> {
     return 1;
   }
 
+  /**
+   * Change the visibility of the model so that it's view is shown. This only works if the model is
+   * used in {@link EpoxyAdapter} or a {@link EpoxyModelGroup}, but is not supported in {@link
+   * EpoxyController}
+   */
   public EpoxyModel<T> show() {
-    shown = true;
-    return this;
+    return show(true);
   }
 
+  /**
+   * Change the visibility of the model's view. This only works if the model is
+   * used in {@link EpoxyAdapter} or a {@link EpoxyModelGroup}, but is not supported in {@link
+   * EpoxyController}
+   */
   public EpoxyModel<T> show(boolean show) {
+    onMutation();
     shown = show;
     return this;
   }
 
+  /**
+   * Change the visibility of the model so that it's view is hidden. This only works if the model is
+   * used in {@link EpoxyAdapter} or a {@link EpoxyModelGroup}, but is not supported in {@link
+   * EpoxyController}
+   */
   public EpoxyModel<T> hide() {
-    shown = false;
-    return this;
+    return show(false);
   }
 
   /**
@@ -289,7 +548,7 @@ public abstract class EpoxyModel<T> {
   public String toString() {
     return getClass().getSimpleName() + "{"
         + "id=" + id
-        + ", layout=" + getLayout()
+        + ", viewType=" + getViewType()
         + ", shown=" + shown
         + ", addedToAdapter=" + addedToAdapter
         + '}';

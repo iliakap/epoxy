@@ -16,16 +16,16 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 
-import static com.airbnb.epoxy.ProcessorUtils.getMethodOnClass;
-import static com.airbnb.epoxy.ProcessorUtils.isIterableType;
-import static com.airbnb.epoxy.ProcessorUtils.isSubtypeOfType;
-import static com.airbnb.epoxy.ProcessorUtils.throwError;
+import static com.airbnb.epoxy.Utils.getMethodOnClass;
+import static com.airbnb.epoxy.Utils.isIterableType;
+import static com.airbnb.epoxy.Utils.isSubtypeOfType;
+import static com.airbnb.epoxy.Utils.throwError;
 
-/** Validates that an attribute implements hashCode. */
+/** Validates that an attribute implements hashCode and equals. */
 class HashCodeValidator {
   /**
-   * Common types that can be assumed will have implementations at runtime that implement hashCode,
-   * but that don't have it by default.
+   * Common interfaces that can be assumed will have implementations at runtime that implement
+   * hashCode, but that don't have it by default.
    */
   private static final List<String> WHITE_LISTED_TYPES = Arrays.asList(
       "java.lang.CharSequence"
@@ -35,24 +35,50 @@ class HashCodeValidator {
       .returns(TypeName.INT)
       .build();
 
+  private static final MethodSpec EQUALS_METHOD = MethodSpec.methodBuilder("equals")
+      .addParameter(TypeName.OBJECT, "obj")
+      .returns(TypeName.BOOLEAN)
+      .build();
+
   private final Types typeUtils;
 
   HashCodeValidator(Types typeUtils) {
     this.typeUtils = typeUtils;
   }
 
+  boolean implementsHashCodeAndEquals(TypeMirror mirror) {
+    try {
+      validateImplementsHashCode(mirror);
+      return true;
+    } catch (EpoxyProcessorException e) {
+      return false;
+    }
+  }
+
   void validate(AttributeInfo attribute) throws EpoxyProcessorException {
     try {
-      validateImplementsHashCode(attribute.getAttributeElement().asType());
+      validateImplementsHashCode(attribute.getTypeMirror());
     } catch (EpoxyProcessorException e) {
       // Append information about the attribute and class to the existing exception
-      throwError(e.getMessage() + " (Attribute: %s Class: %s)",
-          attribute.getName(),
-          attribute.getClassElement().getSimpleName().toString());
+      throwError(e.getMessage()
+              + " (%s#%s) Epoxy requires every field annotated with "
+              + "@EpoxyAttribute to implement equals and hashCode so that changes in the model "
+              + "can be tracked. "
+              + "If you want the attribute to be excluded, use "
+              + "@EpoxyAttribute(DoNotHash). If you want to ignore this warning use "
+              + "@EpoxyAttribute(IgnoreRequireHashCode)",
+          attribute.getModelName(), attribute.getName());
     }
   }
 
   private void validateImplementsHashCode(TypeMirror mirror) throws EpoxyProcessorException {
+    if (mirror.getKind() == TypeKind.ERROR) {
+      // The class type cannot be resolved. This may be because it is a generated epoxy model and
+      // the class hasn't been built yet.
+      // We just assume that the class will implement hashCode at runtime.
+      return;
+    }
+
     if (TypeName.get(mirror).isPrimitive()) {
       return;
     }
@@ -86,10 +112,32 @@ class HashCodeValidator {
     if (!hasHashCodeInClassHierarchy(clazz)) {
       throwError("Attribute does not implement hashCode");
     }
+
+    if (!hasEqualsInClassHierarchy(clazz)) {
+      throwError("Attribute does not implement equals");
+    }
   }
 
   private boolean hasHashCodeInClassHierarchy(TypeElement clazz) {
     ExecutableElement methodOnClass = getMethodOnClass(clazz, HASH_CODE_METHOD, typeUtils);
+    if (methodOnClass == null) {
+      return false;
+    }
+
+    Element implementingClass = methodOnClass.getEnclosingElement();
+    if (implementingClass.getSimpleName().toString().equals("Object")) {
+      // Don't count default implementation on Object class
+      return false;
+    }
+
+    // We don't care if the method is abstract or not, as long as it exists and it isn't the Object
+    // implementation then the runtime value will implement it to some degree (hopefully
+    // correctly :P)
+    return true;
+  }
+
+  private boolean hasEqualsInClassHierarchy(TypeElement clazz) {
+    ExecutableElement methodOnClass = getMethodOnClass(clazz, EQUALS_METHOD, typeUtils);
     if (methodOnClass == null) {
       return false;
     }

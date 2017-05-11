@@ -9,6 +9,7 @@ import java.lang.Double;
 import java.lang.Float;
 import java.lang.Integer;
 import java.lang.Long;
+import java.lang.Number;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.Short;
@@ -18,13 +19,71 @@ import java.util.List;
 
 /**
  * Generated file. Do not modify! */
-public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
+public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes implements GeneratedModel<Object> {
+  private OnModelBoundListener<ModelWithAllFieldTypes_, Object> onModelBoundListener_epoxyGeneratedModel;
+
+  private OnModelUnboundListener<ModelWithAllFieldTypes_, Object> onModelUnboundListener_epoxyGeneratedModel;
+
   public ModelWithAllFieldTypes_() {
     super();
   }
 
+  @Override
+  public void addTo(EpoxyController controller) {
+    super.addTo(controller);
+    addWithDebugValidation(controller);
+  }
+
+  @Override
+  public void handlePreBind(final EpoxyViewHolder holder, final Object object, int position) {
+    validateStateHasNotChangedSinceAdded("The model was changed between being added to the controller and being bound.", position);
+  }
+
+  @Override
+  public void handlePostBind(final Object object, int position) {
+    if (onModelBoundListener_epoxyGeneratedModel != null) {
+      onModelBoundListener_epoxyGeneratedModel.onModelBound(this, object, position);
+    }
+    validateStateHasNotChangedSinceAdded("The model was changed during the bind call.", position);
+  }
+
+  /**
+   * Register a listener that will be called when this model is bound to a view.
+   * <p>
+   * The listener will contribute to this model's hashCode state per the {@link
+   * com.airbnb.epoxy.EpoxyAttribute.Option#DoNotHash} rules.
+   * <p>
+   * You may clear the listener by setting a null value, or by calling {@link #reset()} */
+  public ModelWithAllFieldTypes_ onBind(OnModelBoundListener<ModelWithAllFieldTypes_, Object> listener) {
+    onMutation();
+    this.onModelBoundListener_epoxyGeneratedModel = listener;
+    return this;
+  }
+
+  @Override
+  public void unbind(Object object) {
+    super.unbind(object);
+    if (onModelUnboundListener_epoxyGeneratedModel != null) {
+      onModelUnboundListener_epoxyGeneratedModel.onModelUnbound(this, object);
+    }
+  }
+
+  /**
+   * Register a listener that will be called when this model is unbound from a view.
+   * <p>
+   * The listener will contribute to this model's hashCode state per the {@link
+   * com.airbnb.epoxy.EpoxyAttribute.Option#DoNotHash} rules.
+   * <p>
+   * You may clear the listener by setting a null value, or by calling {@link #reset()} */
+  public ModelWithAllFieldTypes_ onUnbind(OnModelUnboundListener<ModelWithAllFieldTypes_, Object> listener) {
+    onMutation();
+    this.onModelUnboundListener_epoxyGeneratedModel = listener;
+    return this;
+  }
+
   public ModelWithAllFieldTypes_ valueInteger(Integer valueInteger) {
-    this.valueInteger = valueInteger;
+    onMutation();
+    super.valueInteger = valueInteger;
     return this;
   }
 
@@ -33,7 +92,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueShort(short valueShort) {
-    this.valueShort = valueShort;
+    onMutation();
+    super.valueShort = valueShort;
     return this;
   }
 
@@ -42,7 +102,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueLong(long valueLong) {
-    this.valueLong = valueLong;
+    onMutation();
+    super.valueLong = valueLong;
     return this;
   }
 
@@ -51,7 +112,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueList(List<String> valueList) {
-    this.valueList = valueList;
+    onMutation();
+    super.valueList = valueList;
     return this;
   }
 
@@ -60,7 +122,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueShortWrapper(Short valueShortWrapper) {
-    this.valueShortWrapper = valueShortWrapper;
+    onMutation();
+    super.valueShortWrapper = valueShortWrapper;
     return this;
   }
 
@@ -69,7 +132,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueDouble(double valueDouble) {
-    this.valueDouble = valueDouble;
+    onMutation();
+    super.valueDouble = valueDouble;
     return this;
   }
 
@@ -78,7 +142,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueChar(char valueChar) {
-    this.valueChar = valueChar;
+    onMutation();
+    super.valueChar = valueChar;
     return this;
   }
 
@@ -87,7 +152,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueInt(int valueInt) {
-    this.valueInt = valueInt;
+    onMutation();
+    super.valueInt = valueInt;
     return this;
   }
 
@@ -96,7 +162,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueDoubleWrapper(Double valueDoubleWrapper) {
-    this.valueDoubleWrapper = valueDoubleWrapper;
+    onMutation();
+    super.valueDoubleWrapper = valueDoubleWrapper;
     return this;
   }
 
@@ -105,7 +172,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueFloatWrapper(Float valueFloatWrapper) {
-    this.valueFloatWrapper = valueFloatWrapper;
+    onMutation();
+    super.valueFloatWrapper = valueFloatWrapper;
     return this;
   }
 
@@ -114,7 +182,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueBooleanWrapper(Boolean valueBooleanWrapper) {
-    this.valueBooleanWrapper = valueBooleanWrapper;
+    onMutation();
+    super.valueBooleanWrapper = valueBooleanWrapper;
     return this;
   }
 
@@ -123,7 +192,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueByteWrapper(Byte valueByteWrapper) {
-    this.valueByteWrapper = valueByteWrapper;
+    onMutation();
+    super.valueByteWrapper = valueByteWrapper;
     return this;
   }
 
@@ -132,7 +202,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valuebByte(byte valuebByte) {
-    this.valuebByte = valuebByte;
+    onMutation();
+    super.valuebByte = valuebByte;
     return this;
   }
 
@@ -141,7 +212,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueLongWrapper(Long valueLongWrapper) {
-    this.valueLongWrapper = valueLongWrapper;
+    onMutation();
+    super.valueLongWrapper = valueLongWrapper;
     return this;
   }
 
@@ -150,7 +222,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueCharacter(Character valueCharacter) {
-    this.valueCharacter = valueCharacter;
+    onMutation();
+    super.valueCharacter = valueCharacter;
     return this;
   }
 
@@ -159,7 +232,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueString(String valueString) {
-    this.valueString = valueString;
+    onMutation();
+    super.valueString = valueString;
     return this;
   }
 
@@ -168,7 +242,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueFloat(float valueFloat) {
-    this.valueFloat = valueFloat;
+    onMutation();
+    super.valueFloat = valueFloat;
     return this;
   }
 
@@ -177,7 +252,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueBoolean(boolean valueBoolean) {
-    this.valueBoolean = valueBoolean;
+    onMutation();
+    super.valueBoolean = valueBoolean;
     return this;
   }
 
@@ -186,7 +262,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueObjectArray(Object[] valueObjectArray) {
-    this.valueObjectArray = valueObjectArray;
+    onMutation();
+    super.valueObjectArray = valueObjectArray;
     return this;
   }
 
@@ -195,7 +272,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueObject(Object valueObject) {
-    this.valueObject = valueObject;
+    onMutation();
+    super.valueObject = valueObject;
     return this;
   }
 
@@ -204,7 +282,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   }
 
   public ModelWithAllFieldTypes_ valueIntArray(int[] valueIntArray) {
-    this.valueIntArray = valueIntArray;
+    onMutation();
+    super.valueIntArray = valueIntArray;
     return this;
   }
 
@@ -215,6 +294,18 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   @Override
   public ModelWithAllFieldTypes_ id(long id) {
     super.id(id);
+    return this;
+  }
+
+  @Override
+  public ModelWithAllFieldTypes_ id(Number... ids) {
+    super.id(ids);
+    return this;
+  }
+
+  @Override
+  public ModelWithAllFieldTypes_ id(long id1, long id2) {
+    super.id(id1, id2);
     return this;
   }
 
@@ -256,29 +347,31 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
 
   @Override
   public ModelWithAllFieldTypes_ reset() {
-    this.valueInteger = null;
-    this.valueShort = 0;
-    this.valueLong = 0L;
-    this.valueList = null;
-    this.valueShortWrapper = null;
-    this.valueDouble = 0.0d;
-    this.valueChar = 0;
-    this.valueInt = 0;
-    this.valueDoubleWrapper = null;
-    this.valueFloatWrapper = null;
-    this.valueBooleanWrapper = null;
-    this.valueByteWrapper = null;
-    this.valuebByte = 0;
-    this.valueLongWrapper = null;
-    this.valueCharacter = null;
-    this.valueString = null;
-    this.valueFloat = 0.0f;
-    this.valueBoolean = false;
-    this.valueObjectArray = null;
-    this.valueObject = null;
-    this.valueIntArray = null;
+    onModelBoundListener_epoxyGeneratedModel = null;
+    onModelUnboundListener_epoxyGeneratedModel = null;
+    super.valueInteger = null;
+    super.valueShort = (short) 0;
+    super.valueLong = 0L;
+    super.valueList = null;
+    super.valueShortWrapper = null;
+    super.valueDouble = 0.0d;
+    super.valueChar = (char) 0;
+    super.valueInt = 0;
+    super.valueDoubleWrapper = null;
+    super.valueFloatWrapper = null;
+    super.valueBooleanWrapper = null;
+    super.valueByteWrapper = null;
+    super.valuebByte = (byte) 0;
+    super.valueLongWrapper = null;
+    super.valueCharacter = null;
+    super.valueString = null;
+    super.valueFloat = 0.0f;
+    super.valueBoolean = false;
+    super.valueObjectArray = null;
+    super.valueObject = null;
+    super.valueIntArray = null;
     super.reset();
-    return this
+    return this;
   }
 
   @Override
@@ -293,6 +386,12 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
       return false;
     }
     ModelWithAllFieldTypes_ that = (ModelWithAllFieldTypes_) o;
+    if ((onModelBoundListener_epoxyGeneratedModel == null) != (that.onModelBoundListener_epoxyGeneratedModel == null)) {
+      return false;
+    }
+    if ((onModelUnboundListener_epoxyGeneratedModel == null) != (that.onModelUnboundListener_epoxyGeneratedModel == null)) {
+      return false;
+    }
     if (valueInteger != null ? !valueInteger.equals(that.valueInteger) : that.valueInteger != null) {
       return false;
     }
@@ -362,6 +461,8 @@ public class ModelWithAllFieldTypes_ extends ModelWithAllFieldTypes {
   @Override
   public int hashCode() {
     int result = super.hashCode();
+    result = 31 * result + (onModelBoundListener_epoxyGeneratedModel != null ? 1 : 0);
+    result = 31 * result + (onModelUnboundListener_epoxyGeneratedModel != null ? 1 : 0);
     long temp;
     result = 31 * result + (valueInteger != null ? valueInteger.hashCode() : 0);
     result = 31 * result + valueShort;
